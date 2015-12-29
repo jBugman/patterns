@@ -1,3 +1,6 @@
+(function() {
+"use strict";
+
 var scene = new THREE.Scene();
 var camera = new THREE.OrthographicCamera(
     window.innerWidth / -2,
@@ -10,7 +13,7 @@ var camera = new THREE.OrthographicCamera(
 camera.position.z = 1;
 
 var renderer = new THREE.WebGLRenderer();
-renderer.setSize(window.innerWidth, window.innerHeight); false;
+renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.antialias = true;
 document.body.appendChild(renderer.domElement);
 
@@ -28,7 +31,7 @@ mask.renderOrder = 2;
 scene.add(mask);
 
 var planeGeometry = new THREE.PlaneGeometry(512, 512);
-var tempMaterial = new THREE.MeshBasicMaterial({color: 0x000000, transparent: true})
+var tempMaterial = new THREE.MeshBasicMaterial({color: 0x000000, transparent: true});
 
 var origin = new THREE.Mesh(planeGeometry, tempMaterial);
 origin.renderOrder = 0;
@@ -42,11 +45,11 @@ scene.add(overlay);
 overlay.scale.x = 0.96;
 overlay.scale.y = 0.96;
 
-var textureInit = function(texture) {
+function textureInit(texture) {
     var mat = new THREE.MeshBasicMaterial({map: texture, transparent: true});
     origin.material = mat;
     overlay.material = mat;
-};
+}
 
 var loader = new THREE.TextureLoader();
 loader.load('original.png', textureInit);
@@ -59,8 +62,10 @@ function render() {
     overlay.position.x = 3 * Math.cos(t);
     overlay.position.y = 3 * Math.sin(t);
     overlay.rotation.z = 0.1 * Math.cos(t);
-    frameNumber++;
+    frameNumber += 1;
 
     renderer.render(scene, camera);
-};
+}
 render();
+
+}());
