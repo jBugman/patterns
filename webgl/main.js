@@ -17,12 +17,6 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.antialias = true;
 document.body.appendChild(renderer.domElement);
 
-var bg = new THREE.Mesh(
-    new THREE.PlaneGeometry(500, 500),
-    new THREE.MeshBasicMaterial({color: 0xffffff})
-);
-scene.add(bg);
-
 var mask = new THREE.Mesh(
     new THREE.RingGeometry(220, 400, 50),
     new THREE.MeshBasicMaterial({color: 0x000000, transparent: true})
@@ -31,28 +25,35 @@ mask.renderOrder = 2;
 scene.add(mask);
 
 var planeGeometry = new THREE.PlaneGeometry(512, 512);
-var tempMaterial = new THREE.MeshBasicMaterial({color: 0x000000, transparent: true});
+var tex = generateRandomTexture();
+var randomMaterial = new THREE.MeshBasicMaterial({map: tex, transparent: true});
 
-var origin = new THREE.Mesh(planeGeometry, tempMaterial);
+var origin = new THREE.Mesh(planeGeometry, randomMaterial);
 origin.renderOrder = 0;
 scene.add(origin);
 
-var overlay = new THREE.Mesh(planeGeometry, tempMaterial);
+var overlay = new THREE.Mesh(planeGeometry, randomMaterial);
 overlay.renderOrder = 1;
 scene.add(overlay);
 
-// overlay.rotation.z = 0.01;
+// overlay.rotation.z = 0.1;
 overlay.scale.x = 0.96;
 overlay.scale.y = 0.96;
 
-function textureInit(texture) {
-    var mat = new THREE.MeshBasicMaterial({map: texture, transparent: true});
-    origin.material = mat;
-    overlay.material = mat;
+function generateRandomTexture() {
+    var w = 512;
+    var h = 512;
+    var pixels = new Uint8Array(w * h * 4);
+    for (var i = 0; i < w * h; i++) {
+        pixels[4 * i + 0] = 0xFF;
+        pixels[4 * i + 1] = 0xFF;
+        pixels[4 * i + 2] = 0xFF;
+        pixels[4 * i + 3] = (Math.random() < 0.25) ? 0xFF : 0x00;
+    }
+    var tex = new THREE.DataTexture(pixels, w, h, THREE.RGBAFormat);
+    tex.needsUpdate = true;
+    return tex;
 }
-
-var loader = new THREE.TextureLoader();
-loader.load('original.png', textureInit);
 
 var frameNumber = 0;
 function render() {
