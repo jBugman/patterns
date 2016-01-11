@@ -17,28 +17,62 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.antialias = true;
 document.body.appendChild(renderer.domElement);
 
-var mask = new THREE.Mesh(
-    new THREE.RingGeometry(220, 400, 50),
-    new THREE.MeshBasicMaterial({color: 0x000000, transparent: true})
-);
-mask.renderOrder = 2;
-scene.add(mask);
-
 var planeGeometry = new THREE.PlaneGeometry(512, 512);
 var tex = generateRandomTexture();
-var randomMaterial = new THREE.MeshBasicMaterial({map: tex, transparent: true});
+var uniforms = {
+    time: { type: "f", value: 0 },
+    texture: { type: "t", value: tex}
+};
+var vertexShader = `
+    varying vec2 vUv;
+    varying vec2 pos;
+    void main() {
+        vUv = uv;
+        pos = 2.0 * (uv - vec2(0.5, 0.5));
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+`;
+var fragmentShader = `
+    uniform float time;
+    uniform sampler2D texture;
+    varying vec2 vUv;
+    varying vec2 pos;
 
-var origin = new THREE.Mesh(planeGeometry, randomMaterial);
+    float speed = 0.1;
+    float amp = 3.0 / 512.0;
+
+    void main() {
+        float dist = length(pos);
+        if (dist < 0.9) {
+            // float sinX = sin(speed * time);
+            // float cosX = cos(speed * time);
+            // float sinY = sin(speed * time);
+            // mat2 rotationMatrix = mat2(cosX, -sinX, sinY, cosX);
+            // vec2 rotatedUv = (pos * rotationMatrix + vec2(1, 1)) * 0.5;
+
+            // vec2 offset = amp * vec2(cos(speed * time), sin(speed * time));
+            float scale = 0.96; // 0.98 + 0.02 * sin(speed * time);
+            vec2 offset = vec2(0.5, 0.5);
+            vec4 overlay = texture2D(texture, pos * scale * 0.5 + offset);
+            // vec4 rotated = texture2D(texture, rotatedUv);
+            vec4 original = texture2D(texture, vUv);
+            gl_FragColor = max(original, overlay);
+        } else {
+            gl_FragColor = vec4(0, 0, 0, 1.0);
+        }
+    }
+`;
+
+var animatedMaterial = new THREE.ShaderMaterial({
+    uniforms: uniforms,
+    vertexShader:   vertexShader,
+    fragmentShader: fragmentShader,
+    transparent: true
+});
+
+var origin = new THREE.Mesh(planeGeometry, animatedMaterial);
 origin.renderOrder = 0;
 scene.add(origin);
-
-var overlay = new THREE.Mesh(planeGeometry, randomMaterial);
-overlay.renderOrder = 1;
-scene.add(overlay);
-
-// overlay.rotation.z = 0.1;
-overlay.scale.x = 0.96;
-overlay.scale.y = 0.96;
 
 function generateRandomTexture() {
     var w = 512;
@@ -55,15 +89,10 @@ function generateRandomTexture() {
     return tex;
 }
 
-var frameNumber = 0;
 function render() {
     requestAnimationFrame(render);
 
-    var t = frameNumber / 180 * Math.PI;
-    overlay.position.x = 3 * Math.cos(t);
-    overlay.position.y = 3 * Math.sin(t);
-    overlay.rotation.z = 0.1 * Math.cos(t);
-    frameNumber += 1;
+    uniforms.time.value += 0.01;
 
     renderer.render(scene, camera);
 }
